@@ -4,6 +4,8 @@ A self-hosted aquarium monitoring and maintenance tracking application designed 
 
 ## Overview
 
+![Overview Screenshot](overview.png)
+
 Deep Sea Observatory is a full-stack web application for monitoring aquarium sensors, tracking specimens, managing maintenance schedules, and logging water parameters. It provides a mobile-friendly dashboard with real-time sensor data and push notifications via Pushover.
 
 ### Features
@@ -71,10 +73,10 @@ To enable push notifications:
 
 ### Sensor Setup
 
-Sensors push data to the app via HTTP GET requests. Each sensor gets a unique API endpoint:
+Sensors push data to the app via HTTP GET requests. Each sensor gets a unique endpoint based on its ID:
 
 ```
-GET /api/data/{API_KEY}/{VALUE}
+GET /api/data/{SENSOR_ID}/{VALUE}
 ```
 
 Example Arduino/ESP code:
@@ -85,7 +87,7 @@ HTTPClient http;
 float temperature = 25.5;
 
 // Push reading to Deep Sea Observatory
-http.begin("http://192.168.1.100:3001/api/data/your-api-key/" + String(temperature));
+http.begin("http://YOUR_SERVER_IP:3001/api/data/your-sensor-id/" + String(temperature));
 http.GET();
 http.end();
 ```
@@ -93,7 +95,7 @@ http.end();
 For float switches (water level sensors):
 ```cpp
 int floatState = digitalRead(FLOAT_PIN);  // 0 or 1
-http.begin("http://192.168.1.100:3001/api/data/your-api-key/" + String(floatState));
+http.begin("http://YOUR_SERVER_IP:3001/api/data/your-sensor-id/" + String(floatState));
 http.GET();
 ```
 
@@ -138,7 +140,7 @@ aquarium-app/
 - `POST /api/sensors` - Create a sensor
 - `PUT /api/sensors/:id` - Update a sensor
 - `DELETE /api/sensors/:id` - Delete a sensor
-- `GET /api/data/:api_key/:value` - Push sensor reading (for microcontrollers)
+- `GET /api/data/:sensor_id/:value` - Push sensor reading (for microcontrollers)
 
 ### Specimens
 - `GET /api/specimens` - List all specimens

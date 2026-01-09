@@ -20,7 +20,7 @@ Monitor a float switch (water level sensor) with an ESP32. Reports OK/ALERT stat
 All sensors push data via HTTP GET:
 
 ```
-GET http://YOUR_SERVER:4000/api/data/YOUR_API_KEY/VALUE
+GET http://YOUR_SERVER:4000/api/data/YOUR_SENSOR_ID/VALUE
 ```
 
 - **Value sensors**: Send the numeric reading (e.g., `25.5` for temperature)

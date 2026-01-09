@@ -28,8 +28,8 @@ const char* ssid = "YOUR_WIFI_SSID";
 const char* password = "YOUR_WIFI_PASSWORD";
 
 // Deep Sea Observatory API endpoint (get this from the sensor setup page)
-// Format: http://YOUR_SERVER_IP:4000/api/data/YOUR_API_KEY/
-const char* serverUrl = "http://YOUR_SERVER_IP:4000/api/data/your-api-key-here/";
+// Format: http://YOUR_SERVER_IP:4000/api/data/YOUR_SENSOR_ID/
+const char* serverUrl = "http://YOUR_SERVER_IP:4000/api/data/your-sensor-id/";
 
 // Float sensor pin (connect float switch between this pin and GND)
 const int FLOAT_PIN = 13;

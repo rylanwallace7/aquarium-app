@@ -27,7 +27,7 @@ const char* ssid = "YOUR_WIFI_SSID";
 const char* password = "YOUR_WIFI_PASSWORD";
 
 // Deep Sea Observatory API endpoint
-const char* serverUrl = "http://192.168.1.100:4000/api/data/your-api-key-here/";
+const char* serverUrl = "http://YOUR_SERVER_IP:4000/api/data/your-sensor-id/";
 
 // Float sensor pin
 const int FLOAT_PIN = 13;
@@ -66,7 +66,7 @@ ESP32 Float Sensor
 ==================
 Connecting to WiFi: YourNetwork
 .... Connected!
-WiFi connected. IP: 192.168.1.50
+WiFi connected. IP: xxx.xxx.xxx.xxx
 Sending 1 (attempt 1)
 OK
 State changed: ALERT (0)
