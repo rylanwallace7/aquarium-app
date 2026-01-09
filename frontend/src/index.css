@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Outfit', sans-serif;
+  }
+
+  body {
+    @apply bg-kurz-bg text-kurz-dark antialiased;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+}
+
+@layer components {
+  .kurz-border {
+    border: 3px solid #1a1a2e;
+  }
+
+  .kurz-card-shadow {
+    box-shadow: 6px 6px 0px #1a1a2e;
+  }
+
+  .kurz-shadow-sm {
+    box-shadow: 3px 3px 0px #1a1a2e;
+  }
+
+  .geometric-bg {
+    background-image: radial-gradient(#d1d5db 1px, transparent 1px);
+    background-size: 30px 30px;
+  }
+
+  .glow-green {
+    box-shadow: 0 0 15px #00ff88;
+  }
+
+  .param-card {
+    @apply p-3 kurz-border kurz-card-shadow relative overflow-hidden;
+  }
+
+  .nav-btn {
+    @apply flex flex-col items-center justify-center gap-1 p-2 rounded-xl transition-all;
+  }
+
+  .nav-btn.active {
+    @apply bg-kurz-dark text-white;
+  }
+
+  .nav-btn:not(.active) {
+    @apply text-kurz-dark/60 hover:bg-kurz-dark/10;
+  }
+}
