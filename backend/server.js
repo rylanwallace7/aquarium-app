@@ -63,7 +63,7 @@ function sanitizeInteger(value, min = null, max = null, defaultVal = null) {
 
 // Allowed values for enums
 const ALLOWED_COLORS = ['orange', 'cyan', 'purple', 'pink', 'green', 'yellow', 'blue']
-const ALLOWED_ICONS = ['sensors', 'thermostat', 'water_drop', 'opacity', 'science', 'air', 'waves', 'filter_alt', 'cleaning_services', 'build', 'vaccines', 'grass', 'lightbulb', 'electric_bolt', 'speed']
+const ALLOWED_ICONS = ['sensors', 'thermostat', 'water_drop', 'opacity', 'science', 'air', 'waves', 'filter_alt', 'cleaning_services', 'build', 'vaccines', 'grass', 'lightbulb', 'electric_bolt', 'speed', 'swap_vert', 'bolt']
 const ALLOWED_SENSOR_TYPES = ['value', 'float']
 const ALLOWED_HEALTH_STATUS = ['excellent', 'fair', 'critical']
 
