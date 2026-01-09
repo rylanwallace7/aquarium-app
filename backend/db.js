@@ -179,6 +179,10 @@ try {
 } catch (e) { /* column already exists */ }
 
 try {
+  db.run(`ALTER TABLE sensors ADD COLUMN last_reading_at TEXT`)
+} catch (e) { /* column already exists */ }
+
+try {
   db.run(`ALTER TABLE water_parameters ADD COLUMN interval_days INTEGER DEFAULT 0`)
 } catch (e) { /* column already exists */ }
 

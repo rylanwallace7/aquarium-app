@@ -97,6 +97,17 @@ function isValidUrl(str) {
   }
 }
 
+// Sensor down timeout (10 minutes in milliseconds)
+const SENSOR_DOWN_TIMEOUT_MS = 10 * 60 * 1000
+
+// Check if a sensor is down (no reading in 10 minutes)
+function isSensorDown(lastReadingAt) {
+  if (!lastReadingAt) return false // No readings yet, not considered "down"
+  const lastReading = new Date(lastReadingAt).getTime()
+  const now = Date.now()
+  return (now - lastReading) > SENSOR_DOWN_TIMEOUT_MS
+}
+
 // Validate base64 image data (basic check)
 function isValidBase64Image(str) {
   if (typeof str !== 'string') return false
@@ -249,7 +260,13 @@ app.get('/api/sensors', (req, res) => {
     ORDER BY s.created_at ASC
   `).all()
 
-  res.json(sensors)
+  // Add isDown status to each sensor
+  const sensorsWithStatus = sensors.map(sensor => ({
+    ...sensor,
+    isDown: isSensorDown(sensor.last_reading_at)
+  }))
+
+  res.json(sensorsWithStatus)
 })
 
 // Get single sensor with recent readings
@@ -1183,6 +1200,75 @@ app.put('/api/water-parameters/:id/readings/:readingId', (req, res) => {
 const lastAlertState = {}
 // Track when the last alert was sent for each sensor (for repeat notifications)
 const lastAlertSentTime = {}
+// Track down state per sensor
+const lastDownState = {}
+// Track when last down alert was sent
+const lastDownAlertTime = {}
+
+// Clear down state when a reading comes in
+function clearSensorDownState(sensorId) {
+  if (lastDownState[sensorId]) {
+    lastDownState[sensorId] = false
+    delete lastDownAlertTime[sensorId]
+  }
+}
+
+// Check all sensors for down status and send alerts
+async function checkSensorsDownStatus() {
+  const pushoverSettings = getPushoverSettings()
+  if (!pushoverSettings.alertsEnabled || !pushoverSettings.token || !pushoverSettings.user) {
+    return
+  }
+
+  const sensors = db.prepare('SELECT * FROM sensors WHERE last_reading_at IS NOT NULL').all()
+  const now = Date.now()
+
+  for (const sensor of sensors) {
+    // Skip if sensor has alerts disabled
+    if (sensor.alerts_enabled === 0) continue
+
+    const isDown = isSensorDown(sensor.last_reading_at)
+    const wasDown = lastDownState[sensor.id] || false
+
+    if (isDown && !wasDown) {
+      // Just went down - send alert
+      lastDownState[sensor.id] = true
+      lastDownAlertTime[sensor.id] = now
+      await sendPushoverNotification(
+        `🔴 Sensor Down`,
+        `${sensor.name} has not reported in over 10 minutes`,
+        1 // High priority
+      )
+    } else if (isDown && wasDown) {
+      // Still down - check repeat interval
+      const repeatMinutes = pushoverSettings.alertRepeat || 0
+      if (repeatMinutes > 0) {
+        const lastSent = lastDownAlertTime[sensor.id] || 0
+        const repeatMs = repeatMinutes * 60 * 1000
+        if (now - lastSent >= repeatMs) {
+          lastDownAlertTime[sensor.id] = now
+          await sendPushoverNotification(
+            `🔴 Sensor Still Down`,
+            `${sensor.name} has not reported in over 10 minutes`,
+            1
+          )
+        }
+      }
+    } else if (!isDown && wasDown) {
+      // Was down, now back up - send recovery
+      lastDownState[sensor.id] = false
+      delete lastDownAlertTime[sensor.id]
+      await sendPushoverNotification(
+        `✓ Sensor Back Online`,
+        `${sensor.name} is reporting again`,
+        0
+      )
+    }
+  }
+}
+
+// Check sensors every minute for down status
+setInterval(checkSensorsDownStatus, 60000)
 
 // Check if a reading is out of range and send notification
 async function checkAndNotifyAlert(sensor, value) {
@@ -1290,8 +1376,14 @@ app.post('/api/data/:api_key', dataIngestionLimit, async (req, res) => {
 
   db.prepare('INSERT INTO readings (sensor_id, value) VALUES (?, ?)').run(sensor.id, finalValue)
 
+  // Update last_reading_at timestamp
+  db.prepare('UPDATE sensors SET last_reading_at = CURRENT_TIMESTAMP WHERE id = ?').run(sensor.id)
+
   // Check for alerts and send notification
   checkAndNotifyAlert(sensor, finalValue)
+
+  // Clear down state since we got a reading
+  clearSensorDownState(sensor.id)
 
   res.json({ success: true, sensor_name: sensor.name })
 })
@@ -1324,8 +1416,14 @@ app.get('/api/data/:api_key/:value', dataIngestionLimit, async (req, res) => {
 
   db.prepare('INSERT INTO readings (sensor_id, value) VALUES (?, ?)').run(sensor.id, finalValue)
 
+  // Update last_reading_at timestamp
+  db.prepare('UPDATE sensors SET last_reading_at = CURRENT_TIMESTAMP WHERE id = ?').run(sensor.id)
+
   // Check for alerts and send notification
   checkAndNotifyAlert(sensor, finalValue)
+
+  // Clear down state since we got a reading
+  clearSensorDownState(sensor.id)
 
   res.json({ success: true, sensor_name: sensor.name })
 })
@@ -1342,28 +1440,32 @@ app.get('/api/parameters', (req, res) => {
   `).all()
 
   const parameters = sensors.map(sensor => {
+    const isDown = isSensorDown(sensor.last_reading_at)
+
     if (sensor.sensor_type === 'float') {
       // Float switch sensor
       const isOk = sensor.latest_value === sensor.float_ok_value
       return {
         icon: sensor.icon,
         label: sensor.type,
-        value: sensor.latest_value !== null ? (isOk ? 'OK' : 'ALERT') : '--',
+        value: isDown ? 'DOWN' : (sensor.latest_value !== null ? (isOk ? 'OK' : 'ALERT') : '--'),
         unit: '',
-        status: getFloatStatus(sensor.latest_value, sensor.float_ok_value),
+        status: isDown ? 'down' : getFloatStatus(sensor.latest_value, sensor.float_ok_value),
         color: sensor.color,
-        sensor_type: 'float'
+        sensor_type: 'float',
+        isDown
       }
     } else {
       // Value-based sensor
       return {
         icon: sensor.icon,
         label: sensor.type,
-        value: sensor.latest_value?.toFixed(1) || '--',
-        unit: sensor.unit,
-        status: getValueStatus(sensor.latest_value, sensor.min_value, sensor.max_value),
+        value: isDown ? 'DOWN' : (sensor.latest_value?.toFixed(1) || '--'),
+        unit: isDown ? '' : sensor.unit,
+        status: isDown ? 'down' : getValueStatus(sensor.latest_value, sensor.min_value, sensor.max_value),
         color: sensor.color,
-        sensor_type: 'value'
+        sensor_type: 'value',
+        isDown
       }
     }
   })

@@ -176,6 +176,9 @@ function Hardware() {
   }
 
   const getStatusColor = (sensor) => {
+    // Check if sensor is down first
+    if (sensor.isDown) return 'text-red-500'
+
     const value = sensor.latest_value
     if (value === null || value === undefined) return 'text-slate-400'
 
@@ -192,6 +195,9 @@ function Hardware() {
   }
 
   const getStatusText = (sensor) => {
+    // Check if sensor is down first
+    if (sensor.isDown) return 'Offline'
+
     const value = sensor.latest_value
     if (value === null || value === undefined) return 'No Data'
 
@@ -208,6 +214,9 @@ function Hardware() {
   }
 
   const getDisplayValue = (sensor) => {
+    // Check if sensor is down first
+    if (sensor.isDown) return 'DOWN'
+
     if (sensor.latest_value === null || sensor.latest_value === undefined) return '--'
     if (sensor.sensor_type === 'float') {
       const okValue = sensor.float_ok_value ?? 1
@@ -675,7 +684,7 @@ function Hardware() {
                         />
                         <div>
                           <span className="text-sm font-bold text-kurz-dark">Enable Alerts</span>
-                          <p className="text-[9px] text-slate-400">Send notifications when out of range</p>
+                          <p className="text-[9px] text-slate-400">Notify when out of range or offline</p>
                         </div>
                       </label>
 

@@ -271,7 +271,7 @@ function Settings() {
                   />
                   <div>
                     <span className="text-sm font-bold text-kurz-dark">Sensor Alerts</span>
-                    <p className="text-[9px] text-slate-400">When readings go out of range</p>
+                    <p className="text-[9px] text-slate-400">When readings go out of range or offline</p>
                   </div>
                 </label>
 
@@ -303,7 +303,7 @@ function Settings() {
                       ))}
                     </div>
                     <p className="text-[8px] text-slate-400 mt-1">
-                      Re-notify while sensor remains out of range
+                      Re-notify while sensor remains out of range or offline
                     </p>
                   </div>
                 )}

@@ -1,11 +1,11 @@
-function ParameterCard({ icon, label, value, unit, status }) {
+function ParameterCard({ icon, label, value, unit, status, isDown }) {
   // Determine if status is good or bad
   const isGood = ['Normal', 'OK', 'Active', 'Water OK'].includes(status)
-  const isBad = ['Too Low', 'Too High', 'Alert', 'Water Low', 'Critical'].includes(status)
+  const isBad = ['Too Low', 'Too High', 'Alert', 'Water Low', 'Critical', 'down'].includes(status) || isDown
   const isNoData = status === 'No Data'
 
-  // Card background based on status
-  const cardBg = isNoData ? 'bg-slate-300' : isGood ? 'bg-kurz-green' : isBad ? 'bg-kurz-pink' : 'bg-kurz-yellow'
+  // Card background based on status - down sensors are red
+  const cardBg = isDown ? 'bg-red-500' : isNoData ? 'bg-slate-300' : isGood ? 'bg-kurz-green' : isBad ? 'bg-kurz-pink' : 'bg-kurz-yellow'
 
   return (
     <div className={`param-card ${cardBg}`}>
@@ -21,7 +21,7 @@ function ParameterCard({ icon, label, value, unit, status }) {
           {unit && <span className="text-sm ml-0.5">{unit}</span>}
         </span>
         <p className="text-kurz-dark font-bold uppercase text-[8px] mt-1 tracking-wider">
-          {status}
+          {isDown ? 'OFFLINE' : status}
         </p>
       </div>
     </div>
