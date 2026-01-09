@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
+import { useSettings } from '../context/SettingsContext'
 
 function TelemetryChart({ parameters }) {
+  const { timezone, getCurrentDateParts } = useSettings()
   const [activeTab, setActiveTab] = useState(null)
   const [readings, setReadings] = useState([])
   const [dailySummary, setDailySummary] = useState([])
@@ -65,9 +67,8 @@ function TelemetryChart({ parameters }) {
 
   // Generate calendar data for the current month
   const generateCalendar = () => {
-    const now = new Date()
-    const year = now.getFullYear()
-    const month = now.getMonth()
+    // Use timezone-aware current date
+    const { year, month, day: todayDay } = getCurrentDateParts()
 
     // First day of month and total days
     const firstDay = new Date(year, month, 1)
@@ -96,8 +97,8 @@ function TelemetryChart({ parameters }) {
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
       const summary = summaryLookup[dateStr]
-      const isToday = day === now.getDate()
-      const isFuture = day > now.getDate()
+      const isToday = day === todayDay
+      const isFuture = day > todayDay
 
       week.push({
         day,
@@ -128,9 +129,9 @@ function TelemetryChart({ parameters }) {
 
   const calendar = generateCalendar()
   const maxReading = getMaxReading()
-  const now = new Date()
-  const monthName = now.toLocaleString('default', { month: 'long', year: 'numeric' })
-  const currentMonthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  const { year, month } = getCurrentDateParts()
+  const monthName = new Date(year, month, 1).toLocaleString('default', { month: 'long', year: 'numeric', timeZone: timezone })
+  const currentMonthPrefix = `${year}-${String(month + 1).padStart(2, '0')}`
 
   // Count alert days for current month only
   const currentMonthData = dailySummary.filter(d => d.date.startsWith(currentMonthPrefix))

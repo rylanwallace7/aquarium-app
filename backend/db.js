@@ -39,6 +39,7 @@ db.run(`
     min_value REAL,
     max_value REAL,
     sensor_type TEXT DEFAULT 'value',
+    alerts_enabled INTEGER DEFAULT 1,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
   )
 `)
@@ -87,7 +88,6 @@ db.run(`
     name TEXT NOT NULL,
     icon TEXT DEFAULT 'build',
     interval_days INTEGER DEFAULT 7,
-    notification_url TEXT,
     show_percentage INTEGER DEFAULT 0,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
   )
@@ -104,24 +104,6 @@ db.run(`
   )
 `)
 
-// Legacy tables (kept for migration)
-db.run(`
-  CREATE TABLE IF NOT EXISTS water_changes (
-    id TEXT PRIMARY KEY,
-    percentage INTEGER NOT NULL DEFAULT 10,
-    notes TEXT,
-    completed_at TEXT DEFAULT CURRENT_TIMESTAMP
-  )
-`)
-
-db.run(`
-  CREATE TABLE IF NOT EXISTS maintenance_settings (
-    id TEXT PRIMARY KEY DEFAULT 'main',
-    water_change_interval_days INTEGER DEFAULT 7,
-    notification_url TEXT,
-    last_notification_sent TEXT
-  )
-`)
 
 db.run(`
   CREATE TABLE IF NOT EXISTS app_settings (
@@ -130,9 +112,49 @@ db.run(`
   )
 `)
 
+// Water parameters for manual testing (Alk, Ca, Mg, etc.)
+db.run(`
+  CREATE TABLE IF NOT EXISTS water_parameters (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    unit TEXT NOT NULL,
+    color TEXT DEFAULT 'cyan',
+    sort_order INTEGER DEFAULT 0,
+    interval_days INTEGER DEFAULT 0,
+    target_value TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  )
+`)
+
+db.run(`
+  CREATE TABLE IF NOT EXISTS water_parameter_readings (
+    id TEXT PRIMARY KEY,
+    parameter_id TEXT NOT NULL,
+    value REAL NOT NULL,
+    reading_date TEXT NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (parameter_id) REFERENCES water_parameters(id) ON DELETE CASCADE
+  )
+`)
+
+db.run(`
+  CREATE INDEX IF NOT EXISTS idx_water_param_readings_date
+  ON water_parameter_readings(parameter_id, reading_date DESC)
+`)
+
 // Insert default timezone if not exists
 try {
   db.run(`INSERT OR IGNORE INTO app_settings (key, value) VALUES ('timezone', 'UTC')`)
+} catch (e) { /* ignore */ }
+
+// Insert default water parameters if none exist
+try {
+  const paramCount = db.exec("SELECT COUNT(*) as count FROM water_parameters")[0]?.values[0][0] || 0
+  if (paramCount === 0) {
+    db.run(`INSERT INTO water_parameters (id, name, unit, color, sort_order) VALUES ('alk', 'Alkalinity', 'dKH', 'cyan', 1)`)
+    db.run(`INSERT INTO water_parameters (id, name, unit, color, sort_order) VALUES ('ca', 'Calcium', 'ppm', 'purple', 2)`)
+    db.run(`INSERT INTO water_parameters (id, name, unit, color, sort_order) VALUES ('mg', 'Magnesium', 'ppm', 'orange', 3)`)
+  }
 } catch (e) { /* ignore */ }
 
 // Migrations
@@ -150,6 +172,18 @@ try {
 
 try {
   db.run(`ALTER TABLE sensors ADD COLUMN float_ok_value INTEGER DEFAULT 1`)
+} catch (e) { /* column already exists */ }
+
+try {
+  db.run(`ALTER TABLE sensors ADD COLUMN alerts_enabled INTEGER DEFAULT 1`)
+} catch (e) { /* column already exists */ }
+
+try {
+  db.run(`ALTER TABLE water_parameters ADD COLUMN interval_days INTEGER DEFAULT 0`)
+} catch (e) { /* column already exists */ }
+
+try {
+  db.run(`ALTER TABLE water_parameters ADD COLUMN target_value TEXT`)
 } catch (e) { /* column already exists */ }
 
 // Save database to file

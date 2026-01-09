@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useSettings } from '../context/SettingsContext'
 
 const colorOptions = [
   { value: 'orange', label: 'Orange', bg: 'bg-kurz-orange' },
@@ -21,12 +22,14 @@ const iconOptions = [
 ]
 
 function Hardware() {
+  const { formatTime } = useSettings()
   const [sensors, setSensors] = useState([])
   const [showAddForm, setShowAddForm] = useState(false)
   const [expandedSensor, setExpandedSensor] = useState(null)
   const [editingSensor, setEditingSensor] = useState(null)
   const [editForm, setEditForm] = useState({})
   const [lastUpdate, setLastUpdate] = useState(null)
+  const [copiedId, setCopiedId] = useState(null)
   const [newSensor, setNewSensor] = useState({
     name: '',
     type: '',
@@ -105,7 +108,8 @@ function Hardware() {
       icon: sensor.icon,
       min_value: sensor.min_value !== null ? sensor.min_value : '',
       max_value: sensor.max_value !== null ? sensor.max_value : '',
-      float_ok_value: sensor.float_ok_value ?? 1
+      float_ok_value: sensor.float_ok_value ?? 1,
+      alerts_enabled: sensor.alerts_enabled !== 0
     })
   }
 
@@ -135,8 +139,40 @@ function Hardware() {
     return `${base}/api/data/${apiKey}`
   }
 
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text)
+  const copyToClipboard = async (text, sensorId) => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text)
+      } else {
+        // Fallback for mobile devices
+        const textArea = document.createElement('textarea')
+        textArea.value = text
+        textArea.style.position = 'fixed'
+        textArea.style.left = '-9999px'
+        textArea.style.top = '0'
+        document.body.appendChild(textArea)
+        textArea.focus()
+        textArea.select()
+        document.execCommand('copy')
+        document.body.removeChild(textArea)
+      }
+      setCopiedId(sensorId)
+      setTimeout(() => setCopiedId(null), 2000)
+    } catch (err) {
+      // Fallback for any errors
+      const textArea = document.createElement('textarea')
+      textArea.value = text
+      textArea.style.position = 'fixed'
+      textArea.style.left = '-9999px'
+      textArea.style.top = '0'
+      document.body.appendChild(textArea)
+      textArea.focus()
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+      setCopiedId(sensorId)
+      setTimeout(() => setCopiedId(null), 2000)
+    }
   }
 
   const getStatusColor = (sensor) => {
@@ -207,7 +243,7 @@ function Hardware() {
       <div className="flex items-center gap-2 mb-4">
         <span className="w-2 h-2 bg-kurz-green rounded-full animate-pulse"></span>
         <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
-          Live • {lastUpdate ? lastUpdate.toLocaleTimeString() : '--'}
+          Live • {lastUpdate ? formatTime(lastUpdate.toISOString()) : '--'}
         </span>
       </div>
 
@@ -434,10 +470,18 @@ function Hardware() {
         ) : (
           sensors.map(sensor => (
             <div key={sensor.id} className="bg-white kurz-border kurz-card-shadow relative">
-              {/* Type badge - fixed position */}
-              <span className="absolute top-2 right-2 text-[8px] bg-kurz-dark text-white px-1.5 py-0.5 uppercase font-bold">
-                {sensor.sensor_type === 'float' ? 'Float' : 'Value'}
-              </span>
+              {/* Badges - fixed position */}
+              <div className="absolute top-2 right-2 flex gap-1">
+                {sensor.alerts_enabled === 0 && (
+                  <span className="text-[8px] bg-slate-400 text-white px-1.5 py-0.5 uppercase font-bold flex items-center gap-0.5">
+                    <span className="material-symbols-outlined text-[10px]">notifications_off</span>
+                    Muted
+                  </span>
+                )}
+                <span className="text-[8px] bg-kurz-dark text-white px-1.5 py-0.5 uppercase font-bold">
+                  {sensor.sensor_type === 'float' ? 'Float' : 'Value'}
+                </span>
+              </div>
               <div
                 className="p-4 cursor-pointer"
                 onClick={() => setExpandedSensor(expandedSensor === sensor.id ? null : sensor.id)}
@@ -621,6 +665,20 @@ function Hardware() {
                         </div>
                       </div>
 
+                      {/* Alerts Toggle */}
+                      <label className="flex items-center gap-3 cursor-pointer pt-2">
+                        <input
+                          type="checkbox"
+                          checked={editForm.alerts_enabled}
+                          onChange={(e) => setEditForm({ ...editForm, alerts_enabled: e.target.checked })}
+                          className="w-5 h-5 kurz-border rounded-none accent-kurz-blue"
+                        />
+                        <div>
+                          <span className="text-sm font-bold text-kurz-dark">Enable Alerts</span>
+                          <p className="text-[9px] text-slate-400">Send notifications when out of range</p>
+                        </div>
+                      </label>
+
                       <div className="flex gap-2 pt-2">
                         <button
                           onClick={() => handleUpdateSensor(sensor.id)}
@@ -683,10 +741,15 @@ function Hardware() {
                             {getApiUrl(sensor.api_key)}/{sensor.sensor_type === 'float' ? '0 or 1' : 'VALUE'}
                           </code>
                           <button
-                            onClick={() => copyToClipboard(`${getApiUrl(sensor.api_key)}/`)}
-                            className="bg-kurz-blue kurz-border px-3 flex items-center justify-center"
+                            onClick={() => copyToClipboard(`${getApiUrl(sensor.api_key)}/`, sensor.id)}
+                            className={`${copiedId === sensor.id ? 'bg-kurz-green' : 'bg-kurz-blue'} kurz-border px-3 flex items-center justify-center gap-1 transition-colors`}
                           >
-                            <span className="material-symbols-outlined text-white text-sm">content_copy</span>
+                            <span className="material-symbols-outlined text-white text-sm">
+                              {copiedId === sensor.id ? 'check' : 'content_copy'}
+                            </span>
+                            {copiedId === sensor.id && (
+                              <span className="text-white text-[10px] font-bold">Copied!</span>
+                            )}
                           </button>
                         </div>
                       </div>

@@ -11,6 +11,15 @@
     @apply bg-kurz-bg text-kurz-dark antialiased;
     min-height: 100vh;
     min-height: 100dvh;
+    /* Ensure proper viewport handling on mobile */
+    overflow-x: hidden;
+  }
+
+  /* Support for iOS safe areas */
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
   }
 }
 

@@ -3,9 +3,7 @@ import { useSettings } from '../context/SettingsContext'
 
 const healthOptions = [
   { value: 'excellent', label: 'Excellent', color: 'bg-kurz-green' },
-  { value: 'good', label: 'Good', color: 'bg-kurz-cyan' },
   { value: 'fair', label: 'Fair', color: 'bg-kurz-yellow' },
-  { value: 'poor', label: 'Poor', color: 'bg-kurz-orange' },
   { value: 'critical', label: 'Critical', color: 'bg-kurz-pink' }
 ]
 
@@ -20,15 +18,26 @@ function Specimens() {
   const [newNoteText, setNewNoteText] = useState({})
   const fileInputRef = useRef(null)
   const editFileInputRef = useRef(null)
-  const { formatDate, formatRelativeDate, formatTime } = useSettings()
+  const { formatDateOnly, formatRelativeDate, formatTime, formatAge, getDateString } = useSettings()
 
   const [newSpecimen, setNewSpecimen] = useState({
     name: '',
     species: '',
-    health: 'good',
-    acquired_at: new Date().toISOString().split('T')[0],
+    health: 'excellent',
+    acquired_at: '',
     image: null
   })
+
+  // Set default date when form is opened
+  const handleOpenAddForm = () => {
+    if (!showAddForm) {
+      setNewSpecimen(prev => ({
+        ...prev,
+        acquired_at: getDateString()
+      }))
+    }
+    setShowAddForm(!showAddForm)
+  }
 
   const fetchSpecimens = async () => {
     try {
@@ -98,8 +107,8 @@ function Specimens() {
         setNewSpecimen({
           name: '',
           species: '',
-          health: 'good',
-          acquired_at: new Date().toISOString().split('T')[0],
+          health: 'excellent',
+          acquired_at: '',
           image: null
         })
         setShowAddForm(false)
@@ -236,7 +245,7 @@ function Specimens() {
           </p>
         </div>
         <button
-          onClick={() => setShowAddForm(!showAddForm)}
+          onClick={handleOpenAddForm}
           className={`w-10 h-10 kurz-border kurz-shadow-sm flex items-center justify-center ${
             showAddForm ? 'bg-kurz-pink' : 'bg-kurz-cyan'
           }`}
@@ -406,7 +415,7 @@ function Specimens() {
                         </p>
                       )}
                       <p className="text-[9px] text-slate-400 mt-0.5">
-                        Added {formatDate(specimen.acquired_at)}
+                        {formatAge(specimen.acquired_at)}
                       </p>
                     </div>
 
@@ -575,7 +584,7 @@ function Specimens() {
                               Acquired
                             </label>
                             <p className="text-sm text-kurz-dark">
-                              {formatDate(specimen.acquired_at)}
+                              {formatDateOnly(specimen.acquired_at)}
                             </p>
                           </div>
                         </div>

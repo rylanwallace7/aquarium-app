@@ -10,7 +10,7 @@ const navItems = [
 
 function BottomNav() {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 h-20 bg-kurz-dark border-t-3 border-black flex items-center justify-around px-2 py-3">
+    <nav className="fixed bottom-0 left-0 right-0 bg-kurz-dark border-t-3 border-black flex items-center justify-around px-2 pt-3 pb-3 z-50" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
       {navItems.map(item => (
         <NavLink
           key={item.path}
