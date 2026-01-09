@@ -4,7 +4,7 @@ A self-hosted aquarium monitoring and maintenance tracking application designed 
 
 ## Overview
 
-![Overview Screenshot](overview.png)
+<img src="overview.png" alt="Overview Screenshot" width="600">
 
 Deep Sea Observatory is a full-stack web application for monitoring aquarium sensors, tracking specimens, managing maintenance schedules, and logging water parameters. It provides a mobile-friendly dashboard with real-time sensor data and push notifications via Pushover.
 
