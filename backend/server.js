@@ -352,7 +352,7 @@ app.put('/api/sensors/:id', (req, res) => {
     return res.status(404).json({ error: 'Sensor not found' })
   }
 
-  const { name, type, unit, color, icon, min_value, max_value, sensor_type, float_ok_value, alerts_enabled } = req.body
+  const { name, type, unit, color, icon, min_value, max_value, sensor_type, float_ok_value, alerts_enabled, disabled } = req.body
 
   // Sanitize inputs, keeping existing values if not provided
   const sanitizedName = name ? sanitizeString(name, 100) : existing.name
@@ -365,10 +365,11 @@ app.put('/api/sensors/:id', (req, res) => {
   const sanitizedMaxValue = max_value !== undefined ? sanitizeNumber(max_value, -10000, 10000, null) : existing.max_value
   const sanitizedFloatOkValue = float_ok_value !== undefined ? sanitizeInteger(float_ok_value, 0, 1, existing.float_ok_value) : existing.float_ok_value
   const sanitizedAlertsEnabled = alerts_enabled !== undefined ? (alerts_enabled ? 1 : 0) : existing.alerts_enabled
+  const sanitizedDisabled = disabled !== undefined ? (disabled ? 1 : 0) : existing.disabled
 
   db.prepare(`
     UPDATE sensors
-    SET name = ?, type = ?, unit = ?, color = ?, icon = ?, min_value = ?, max_value = ?, sensor_type = ?, float_ok_value = ?, alerts_enabled = ?
+    SET name = ?, type = ?, unit = ?, color = ?, icon = ?, min_value = ?, max_value = ?, sensor_type = ?, float_ok_value = ?, alerts_enabled = ?, disabled = ?
     WHERE id = ?
   `).run(
     sanitizedName,
@@ -381,6 +382,7 @@ app.put('/api/sensors/:id', (req, res) => {
     validatedSensorType,
     sanitizedFloatOkValue,
     sanitizedAlertsEnabled,
+    sanitizedDisabled,
     req.params.id
   )
 
@@ -1224,8 +1226,8 @@ async function checkSensorsDownStatus() {
   const now = Date.now()
 
   for (const sensor of sensors) {
-    // Skip if sensor has alerts disabled
-    if (sensor.alerts_enabled === 0) continue
+    // Skip if sensor is disabled or has alerts disabled
+    if (sensor.disabled === 1 || sensor.alerts_enabled === 0) continue
 
     const isDown = isSensorDown(sensor.last_reading_at)
     const wasDown = lastDownState[sensor.id] || false
@@ -1368,6 +1370,11 @@ app.post('/api/data/:api_key', dataIngestionLimit, async (req, res) => {
     return res.status(404).json({ error: 'Invalid API key' })
   }
 
+  // Skip processing if sensor is disabled
+  if (sensor.disabled) {
+    return res.json({ success: true, sensor_name: sensor.name, disabled: true })
+  }
+
   // For float switches, normalize to 0 or 1
   let finalValue = numValue
   if (sensor.sensor_type === 'float') {
@@ -1408,6 +1415,11 @@ app.get('/api/data/:api_key/:value', dataIngestionLimit, async (req, res) => {
     return res.status(404).json({ error: 'Invalid API key' })
   }
 
+  // Skip processing if sensor is disabled
+  if (sensor.disabled) {
+    return res.json({ success: true, sensor_name: sensor.name, disabled: true })
+  }
+
   // For float switches, normalize to 0 or 1
   let finalValue = numValue
   if (sensor.sensor_type === 'float') {
@@ -1440,7 +1452,8 @@ app.get('/api/parameters', (req, res) => {
   `).all()
 
   const parameters = sensors.map(sensor => {
-    const isDown = isSensorDown(sensor.last_reading_at)
+    const isDisabled = sensor.disabled === 1
+    const isDown = !isDisabled && isSensorDown(sensor.last_reading_at)
 
     if (sensor.sensor_type === 'float') {
       // Float switch sensor
@@ -1448,24 +1461,26 @@ app.get('/api/parameters', (req, res) => {
       return {
         icon: sensor.icon,
         label: sensor.type,
-        value: isDown ? 'DOWN' : (sensor.latest_value !== null ? (isOk ? 'OK' : 'ALERT') : '--'),
+        value: isDisabled ? '--' : (isDown ? 'DOWN' : (sensor.latest_value !== null ? (isOk ? 'OK' : 'ALERT') : '--')),
         unit: '',
-        status: isDown ? 'down' : getFloatStatus(sensor.latest_value, sensor.float_ok_value),
+        status: isDisabled ? 'disabled' : (isDown ? 'down' : getFloatStatus(sensor.latest_value, sensor.float_ok_value)),
         color: sensor.color,
         sensor_type: 'float',
-        isDown
+        isDown,
+        isDisabled
       }
     } else {
       // Value-based sensor
       return {
         icon: sensor.icon,
         label: sensor.type,
-        value: isDown ? 'DOWN' : (sensor.latest_value?.toFixed(1) || '--'),
-        unit: isDown ? '' : sensor.unit,
-        status: isDown ? 'down' : getValueStatus(sensor.latest_value, sensor.min_value, sensor.max_value),
+        value: isDisabled ? '--' : (isDown ? 'DOWN' : (sensor.latest_value?.toFixed(1) || '--')),
+        unit: isDisabled ? '' : (isDown ? '' : sensor.unit),
+        status: isDisabled ? 'disabled' : (isDown ? 'down' : getValueStatus(sensor.latest_value, sensor.min_value, sensor.max_value)),
         color: sensor.color,
         sensor_type: 'value',
-        isDown
+        isDown,
+        isDisabled
       }
     }
   })

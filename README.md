@@ -8,11 +8,11 @@ Deep Sea Observatory is a full-stack web application for monitoring aquarium sen
 
 ### Features
 
-- **Sensor Monitoring** - Connect microcontrollers (Arduino, ESP32, etc.) to push data via simple HTTP endpoints. Supports value sensors (temperature, pH, salinity) and float switches (water level detection).
+- **Sensor Monitoring** - Connect microcontrollers (Arduino, ESP32, etc.) to push data via simple HTTP endpoints. Supports value sensors (temperature, pH, salinity) and float switches (water level detection). Automatic offline detection if a sensor stops reporting for 10 minutes.
 - **Specimen Registry** - Track your aquarium inhabitants with photos, health status, acquisition dates, and notes.
 - **Maintenance Scheduling** - Create recurring maintenance tasks with customizable intervals and completion tracking.
 - **Water Parameters** - Log manual water tests (Alkalinity, Calcium, Magnesium, etc.) with calendar visualization and testing reminders.
-- **Push Notifications** - Get alerts via Pushover when sensors go out of range or maintenance is due.
+- **Push Notifications** - Get alerts via Pushover when sensors go out of range, go offline, or maintenance is due. Configurable repeat intervals for ongoing alerts.
 - **Mobile-First Design** - Responsive UI optimized for phones and tablets.
 
 ## Tech Stack
@@ -101,6 +101,9 @@ Each sensor can be configured with:
 - Min/Max normal range (for value sensors)
 - OK value (for float switches - which reading means "normal")
 - Alert notifications (can be enabled/disabled per sensor)
+- Disable toggle (temporarily stop processing readings and alerts)
+
+Sensors are automatically marked as offline if no data is received for 10 minutes. The dashboard shows offline sensors in red, and Pushover alerts are sent when sensors go down or come back online.
 
 ## Security Notice
 

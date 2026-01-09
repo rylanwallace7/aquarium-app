@@ -109,7 +109,8 @@ function Hardware() {
       min_value: sensor.min_value !== null ? sensor.min_value : '',
       max_value: sensor.max_value !== null ? sensor.max_value : '',
       float_ok_value: sensor.float_ok_value ?? 1,
-      alerts_enabled: sensor.alerts_enabled !== 0
+      alerts_enabled: sensor.alerts_enabled !== 0,
+      disabled: sensor.disabled === 1
     })
   }
 
@@ -176,7 +177,9 @@ function Hardware() {
   }
 
   const getStatusColor = (sensor) => {
-    // Check if sensor is down first
+    // Check if sensor is disabled first
+    if (sensor.disabled === 1) return 'text-slate-400'
+    // Check if sensor is down
     if (sensor.isDown) return 'text-red-500'
 
     const value = sensor.latest_value
@@ -195,7 +198,9 @@ function Hardware() {
   }
 
   const getStatusText = (sensor) => {
-    // Check if sensor is down first
+    // Check if sensor is disabled first
+    if (sensor.disabled === 1) return 'Disabled'
+    // Check if sensor is down
     if (sensor.isDown) return 'Offline'
 
     const value = sensor.latest_value
@@ -214,7 +219,9 @@ function Hardware() {
   }
 
   const getDisplayValue = (sensor) => {
-    // Check if sensor is down first
+    // Check if sensor is disabled first
+    if (sensor.disabled === 1) return '--'
+    // Check if sensor is down
     if (sensor.isDown) return 'DOWN'
 
     if (sensor.latest_value === null || sensor.latest_value === undefined) return '--'
@@ -481,7 +488,13 @@ function Hardware() {
             <div key={sensor.id} className="bg-white kurz-border kurz-card-shadow relative">
               {/* Badges - fixed position */}
               <div className="absolute top-2 right-2 flex gap-1">
-                {sensor.alerts_enabled === 0 && (
+                {sensor.disabled === 1 && (
+                  <span className="text-[8px] bg-slate-500 text-white px-1.5 py-0.5 uppercase font-bold flex items-center gap-0.5">
+                    <span className="material-symbols-outlined text-[10px]">block</span>
+                    Disabled
+                  </span>
+                )}
+                {sensor.disabled !== 1 && sensor.alerts_enabled === 0 && (
                   <span className="text-[8px] bg-slate-400 text-white px-1.5 py-0.5 uppercase font-bold flex items-center gap-0.5">
                     <span className="material-symbols-outlined text-[10px]">notifications_off</span>
                     Muted
@@ -674,12 +687,27 @@ function Hardware() {
                         </div>
                       </div>
 
-                      {/* Alerts Toggle */}
+                      {/* Disable Toggle */}
                       <label className="flex items-center gap-3 cursor-pointer pt-2">
+                        <input
+                          type="checkbox"
+                          checked={editForm.disabled}
+                          onChange={(e) => setEditForm({ ...editForm, disabled: e.target.checked })}
+                          className="w-5 h-5 kurz-border rounded-none accent-kurz-orange"
+                        />
+                        <div>
+                          <span className="text-sm font-bold text-kurz-dark">Disable Sensor</span>
+                          <p className="text-[9px] text-slate-400">Temporarily stop readings and alerts</p>
+                        </div>
+                      </label>
+
+                      {/* Alerts Toggle */}
+                      <label className={`flex items-center gap-3 cursor-pointer ${editForm.disabled ? 'opacity-50' : ''}`}>
                         <input
                           type="checkbox"
                           checked={editForm.alerts_enabled}
                           onChange={(e) => setEditForm({ ...editForm, alerts_enabled: e.target.checked })}
+                          disabled={editForm.disabled}
                           className="w-5 h-5 kurz-border rounded-none accent-kurz-blue"
                         />
                         <div>
