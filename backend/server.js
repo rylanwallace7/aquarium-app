@@ -159,7 +159,7 @@ setInterval(() => {
 
 // Rate limiters for different endpoint types
 const apiRateLimit = rateLimit(60000, 100)  // 100 requests per minute for general API
-const dataIngestionLimit = rateLimit(1000, 10)  // 10 requests per second for data ingestion
+const dataIngestionLimit = rateLimit(60000, 120)  // 120 requests per minute for sensor data
 const settingsRateLimit = rateLimit(60000, 20)  // 20 requests per minute for settings
 
 // ============ SECURITY: HTTP Headers ============
