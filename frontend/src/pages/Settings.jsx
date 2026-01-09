@@ -116,7 +116,7 @@ function Settings() {
   }
 
   return (
-    <div>
+    <div className="pb-8">
       <div className="mb-4">
         <h2 className="font-display font-black text-xl uppercase italic tracking-tighter text-kurz-dark">
           Settings
