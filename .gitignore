@@ -7,6 +7,3 @@ dist
 
 # Database files
 backend/data/
-
-# Local tool config
-.claude/
