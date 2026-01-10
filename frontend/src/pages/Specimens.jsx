@@ -97,21 +97,25 @@ function Specimens() {
 
   const handleAddSpecimen = async (e) => {
     e.preventDefault()
+    const specimenToAdd = { ...newSpecimen }
+
+    // Optimistic UI: close form and reset immediately
+    setNewSpecimen({
+      name: '',
+      species: '',
+      health: 'excellent',
+      acquired_at: '',
+      image: null
+    })
+    setShowAddForm(false)
+
     try {
       const res = await fetch('/api/specimens', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newSpecimen)
+        body: JSON.stringify(specimenToAdd)
       })
       if (res.ok) {
-        setNewSpecimen({
-          name: '',
-          species: '',
-          health: 'excellent',
-          acquired_at: '',
-          image: null
-        })
-        setShowAddForm(false)
         fetchSpecimens()
       }
     } catch (err) {
@@ -350,7 +354,7 @@ function Specimens() {
               </div>
             </div>
 
-            <div>
+            <div className="overflow-hidden">
               <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                 Date Acquired
               </label>
@@ -358,7 +362,7 @@ function Specimens() {
                 type="date"
                 value={newSpecimen.acquired_at}
                 onChange={(e) => setNewSpecimen({ ...newSpecimen, acquired_at: e.target.value })}
-                className="w-full p-2 kurz-border text-sm"
+                className="w-full max-w-full p-2 kurz-border text-sm box-border"
               />
             </div>
 
@@ -514,7 +518,7 @@ function Specimens() {
                           </div>
                         </div>
 
-                        <div>
+                        <div className="overflow-hidden">
                           <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                             Date Acquired
                           </label>
@@ -522,7 +526,7 @@ function Specimens() {
                             type="date"
                             value={editForm.acquired_at}
                             onChange={(e) => setEditForm({ ...editForm, acquired_at: e.target.value })}
-                            className="w-full p-2 kurz-border text-sm"
+                            className="w-full max-w-full p-2 kurz-border text-sm box-border"
                           />
                         </div>
 
