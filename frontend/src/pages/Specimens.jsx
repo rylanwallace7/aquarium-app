@@ -368,7 +368,7 @@ function Specimens() {
               </div>
             </div>
 
-            <div className="overflow-hidden">
+            <div>
               <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                 Date Acquired
               </label>
@@ -376,7 +376,7 @@ function Specimens() {
                 type="date"
                 value={newSpecimen.acquired_at}
                 onChange={(e) => setNewSpecimen({ ...newSpecimen, acquired_at: e.target.value })}
-                className="w-full max-w-full p-2 kurz-border text-sm box-border"
+                className="w-full p-2 kurz-border text-sm"
               />
             </div>
 
@@ -532,7 +532,7 @@ function Specimens() {
                           </div>
                         </div>
 
-                        <div className="overflow-hidden">
+                        <div>
                           <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                             Date Acquired
                           </label>
@@ -540,7 +540,7 @@ function Specimens() {
                             type="date"
                             value={editForm.acquired_at}
                             onChange={(e) => setEditForm({ ...editForm, acquired_at: e.target.value })}
-                            className="w-full max-w-full p-2 kurz-border text-sm box-border"
+                            className="w-full p-2 kurz-border text-sm"
                           />
                         </div>
 
