@@ -24,6 +24,7 @@ const iconOptions = [
 function Hardware() {
   const { formatTime } = useSettings()
   const [sensors, setSensors] = useState([])
+  const [loading, setLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
   const [expandedSensor, setExpandedSensor] = useState(null)
   const [editingSensor, setEditingSensor] = useState(null)
@@ -52,6 +53,8 @@ function Hardware() {
       }
     } catch (err) {
       // Silently ignore fetch errors
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -230,6 +233,17 @@ function Hardware() {
       return sensor.latest_value === okValue ? 'OK' : 'ALERT'
     }
     return sensor.latest_value.toFixed(1)
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <span className="material-symbols-outlined text-4xl text-kurz-cyan animate-spin">sync</span>
+          <p className="text-sm text-slate-400 mt-2">Loading...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
