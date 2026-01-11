@@ -167,8 +167,8 @@ function TelemetryChart({ parameters }) {
         ))}
       </div>
 
-      {/* Chart - only for value sensors */}
-      {!isFloatSensor && (
+      {/* Chart - only for value sensors (hide until sensor data is loaded) */}
+      {sensor && !isFloatSensor && (
         <div className="bg-white kurz-border kurz-card-shadow p-4 mb-4">
           <div className="h-32 w-full relative">
             {readings.length < 2 ? (
