@@ -4,6 +4,7 @@ import path from 'path'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
 import crypto from 'crypto'
+import sharp from 'sharp'
 import db from './db.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -113,9 +114,43 @@ function isValidBase64Image(str) {
   if (typeof str !== 'string') return false
   // Check for data URL format with image mime type
   if (!str.startsWith('data:image/')) return false
-  // Limit size (5MB base64 ≈ 3.75MB actual)
-  if (str.length > 5 * 1024 * 1024) return false
+  // Limit size (10MB base64 for input, will be compressed)
+  if (str.length > 10 * 1024 * 1024) return false
   return true
+}
+
+// Convert base64 image to WebP format with compression
+async function convertToWebP(base64DataUrl) {
+  if (!base64DataUrl || !base64DataUrl.startsWith('data:image/')) {
+    return base64DataUrl
+  }
+
+  try {
+    // Extract base64 data from data URL
+    const matches = base64DataUrl.match(/^data:image\/\w+;base64,(.+)$/)
+    if (!matches) return base64DataUrl
+
+    const base64Data = matches[1]
+    const imageBuffer = Buffer.from(base64Data, 'base64')
+
+    // Convert to WebP with quality setting (80 is good balance of quality/size)
+    const webpBuffer = await sharp(imageBuffer)
+      .rotate() // Auto-rotate based on EXIF
+      .resize(1200, 1200, { // Max dimensions, maintains aspect ratio
+        fit: 'inside',
+        withoutEnlargement: true
+      })
+      .webp({ quality: 80 })
+      .toBuffer()
+
+    // Convert back to base64 data URL
+    const webpBase64 = webpBuffer.toString('base64')
+    return `data:image/webp;base64,${webpBase64}`
+  } catch (err) {
+    console.error('Image conversion error:', err.message)
+    // Return original if conversion fails
+    return base64DataUrl
+  }
 }
 
 // Validate date string format (YYYY-MM-DD)
@@ -452,7 +487,7 @@ app.get('/api/specimens/:id', (req, res) => {
 })
 
 // Create new specimen
-app.post('/api/specimens', (req, res) => {
+app.post('/api/specimens', async (req, res) => {
   const { name, species, health, acquired_at, notes, image } = req.body
 
   // Validate required fields
@@ -462,7 +497,7 @@ app.post('/api/specimens', (req, res) => {
 
   // Validate image if provided
   if (image && !isValidBase64Image(image)) {
-    return res.status(400).json({ error: 'Invalid image format or size (max 5MB)' })
+    return res.status(400).json({ error: 'Invalid image format or size (max 10MB)' })
   }
 
   // Validate date if provided
@@ -478,6 +513,9 @@ app.post('/api/specimens', (req, res) => {
   const validatedHealth = validateEnum(health, ALLOWED_HEALTH_STATUS, 'excellent')
   const sanitizedNotes = sanitizeString(notes || '', 2000)
 
+  // Convert image to WebP for smaller size
+  const processedImage = image ? await convertToWebP(image) : null
+
   db.prepare(`
     INSERT INTO specimens (id, name, species, health, acquired_at, notes, image)
     VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -488,7 +526,7 @@ app.post('/api/specimens', (req, res) => {
     validatedHealth,
     acquired_at || getDateInTimezone(new Date().toISOString(), getUserTimezone()),
     sanitizedNotes,
-    image || null
+    processedImage
   )
 
   const specimen = db.prepare('SELECT * FROM specimens WHERE id = ?').get(id)
@@ -496,7 +534,7 @@ app.post('/api/specimens', (req, res) => {
 })
 
 // Update specimen
-app.put('/api/specimens/:id', (req, res) => {
+app.put('/api/specimens/:id', async (req, res) => {
   // Validate ID format
   if (!isValidUUID(req.params.id)) {
     return res.status(400).json({ error: 'Invalid specimen ID format' })
@@ -511,7 +549,7 @@ app.put('/api/specimens/:id', (req, res) => {
 
   // Validate image if provided
   if (image && !isValidBase64Image(image)) {
-    return res.status(400).json({ error: 'Invalid image format or size (max 5MB)' })
+    return res.status(400).json({ error: 'Invalid image format or size (max 10MB)' })
   }
 
   // Validate date if provided
@@ -525,6 +563,12 @@ app.put('/api/specimens/:id', (req, res) => {
   const validatedHealth = health ? validateEnum(health, ALLOWED_HEALTH_STATUS, existing.health) : existing.health
   const sanitizedNotes = notes !== undefined ? sanitizeString(notes, 2000) : existing.notes
 
+  // Convert new image to WebP if provided
+  let processedImage = existing.image
+  if (image !== undefined) {
+    processedImage = image ? await convertToWebP(image) : null
+  }
+
   db.prepare(`
     UPDATE specimens
     SET name = ?, species = ?, health = ?, acquired_at = ?, notes = ?, image = ?
@@ -535,7 +579,7 @@ app.put('/api/specimens/:id', (req, res) => {
     validatedHealth,
     acquired_at ?? existing.acquired_at,
     sanitizedNotes,
-    image !== undefined ? image : existing.image,
+    processedImage,
     req.params.id
   )
 
