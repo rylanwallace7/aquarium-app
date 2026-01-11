@@ -5,14 +5,22 @@
 @layer base {
   html {
     font-family: 'Outfit', sans-serif;
+    height: 100%;
+    overflow: hidden;
   }
 
   body {
     @apply bg-kurz-bg text-kurz-dark antialiased;
-    min-height: 100vh;
-    min-height: 100dvh;
-    /* Ensure proper viewport handling on mobile */
-    overflow-x: hidden;
+    height: 100%;
+    height: 100dvh;
+    overflow: hidden;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #root {
+    height: 100%;
+    overflow: hidden;
   }
 
   /* Force date inputs to respect container width on mobile */

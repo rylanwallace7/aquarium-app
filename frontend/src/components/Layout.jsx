@@ -4,9 +4,9 @@ import Header from './Header'
 
 function Layout() {
   return (
-    <div className="min-h-screen min-h-[100dvh] flex flex-col geometric-bg">
+    <div className="h-screen h-[100dvh] flex flex-col geometric-bg overflow-hidden">
       <Header />
-      <main className="flex-1 p-4 pb-28 overflow-auto">
+      <main className="flex-1 p-4 pb-28 overflow-y-auto overscroll-contain">
         <Outlet />
       </main>
       <BottomNav />
