@@ -15,6 +15,15 @@
     overflow-x: hidden;
   }
 
+  /* Force date inputs to respect container width on mobile */
+  input[type="date"] {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
   /* Support for iOS safe areas */
   @supports (padding-bottom: env(safe-area-inset-bottom)) {
     .pb-safe {
